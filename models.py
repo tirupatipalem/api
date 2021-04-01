@@ -1,35 +1,23 @@
 from django.db import models
 
+from django.contrib.auth.models import AbstractUser
 
-
-class Course(models.Model):
-    c_name = models.CharField(max_length=64,null=True,blank=True)
-
-    def __str__(self):
-        return self.c_name
-
-
-class Subject(models.Model):
-    sub_name = models.CharField(max_length=64,null=True,blank=True)
-    course = models.ForeignKey(Course,on_delete=models.CASCADE,null=True)
+class User(AbstractUser):
+    username = models.CharField(unique=True,max_length=64,null=True,blank=True)
+    email = models.EmailField(unique=True,max_length=64,null=True,blank=True)
+    age = models.IntegerField(null=True,blank=True)
+    gender = models.CharField(max_length=64,null=True,blank=True)
+    address = models.CharField(max_length=64,null=True,blank=True)
+    phone_no = models.IntegerField(null=True,blank=True)
+    
 
     def __str__(self):
-        return self.sub_name
-
-class Profile(models.Model):
-    type = models.CharField(max_length=64,null=True,blank=True)
-    course = models.ManyToManyField(Course)
-    subject = models.ManyToManyField(Subject)
-
-    def __str__(self):
-        return self.type
+        return str(self.username)
 
 
-class Results(models.Model):
-    user = models.ForeignKey(Profile,on_delete=models.CASCADE,null=True)
-    course = models.ForeignKey(Course,on_delete=models.CASCADE,null=True)
-    subject = models.ForeignKey(Subject,on_delete=models.CASCADE,null=True)
-    marks = models.FloatField(null=True,blank=True)
+class ForgetPassword(models.Model):
+    user = models.ForeignKey(User,on_delete=models.CASCADE,null=True,blank=True)
+    otp = models.CharField(max_length=20,null=True,blank=True)
     
 
 
