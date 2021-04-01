@@ -1,252 +1,252 @@
 from django.shortcuts import render
-
-# Create your views here.
-from . models import Results,Course,Subject,Profile
-from django.http import JsonResponse,response
+from . models import User
 from rest_framework import status
 from rest_framework.decorators import api_view
+from django.http import JsonResponse,response
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import check_password
+from rest_framework.authtoken.models import Token
+from django.views.decorators.csrf import csrf_exempt
+
+
+from . models import ForgetPassword
+from django.core.mail import send_mail
 
 
 @api_view(['GET'])
-def get_st(request):
+def get_api(request):
     if request.method == 'GET':
-        user_qs = list(Profile.objects.all().values())
+        user_qs = list(User.objects.all().values())
 
-        user_li = []
-        for user in user_qs:
-            course_qs=list(Course.objects.all().values())
-            
-            course_li=[]
-            for course in course_qs:
-                subject_qs = list(Subject.objects.filter(course_id =course["id"]).values())
-                
-                res_li= []
-                for subject in subject_qs:
-                    results = list(Results.objects.filter(subject_id = subject["id"],course_id = course["id"],user_id= user["id"]).values())
-        
-                    for res in results:
-                        dic={}
-                        dic["subject"] = subject["sub_name"]
-                        dic["marks"] = res["marks"]
-                        
-                        res_li.append(dic)
+        return JsonResponse({'success':True,'data':user_qs})
+    return JsonResponse({'success':False,'data':'does not exist'})
+
+
+@api_view(['POST'])
+def post_api(request):
+    if request.method == 'POST':
+
+        username = request.data.get('username')  
+        password = make_password(request.data.get('password'))
+        email = request.data.get('email')
+        age = request.data.get('age')
+        gender = request.data.get('gender')
+        address = request.data.get('address')
+        phone_no = request.data.get('phone_no')
+
+
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'success':False,'data':'username already exists'})  
+
+        if User.objects.filter(email=email).exists():
+            return JsonResponse({'success':False,'data':'Email already exists'})      
+
+        User.objects.create(username=username,
+                            password=password,
+                            email=email,
+                            age=age,
+                            gender=gender,
+                            address=address,
+                            phone_no=phone_no)
+
+        return JsonResponse({'success':True,'data':'data created Successfully'})
+    return JsonResponse({'success':False,'data':'does not exist'})
+
                     
-                dic={}
-                dic["course_name"] = course["c_name"]
-                dic["subjects"] = res_li
-                
-                if res_li:
-                    course_li.append(dic)
-                    print(course_li)
-
-            dic={}
-            dic["name"] = user["type"]
-            dic["course"] = course_li
-            if course_li:
-                user_li.append(dic)
-
-        return JsonResponse({'sucess':True,'data':user_li})
-    return JsonResponse({'success':False,'data':'data does not exist'})    
-
-
-@api_view(['GET'])
-def get_st1(request):
-    if request.method == 'GET':
-        res_qs = list(Results.objects.all().values("id","user_id","user__type","course__c_name","course_id","subject_id","subject__sub_name","marks"))
-        lst = []
-        user_lst = []
-        for item in res_qs:
-            out = { }
-            if item['user__type'] not in user_lst:
-                out['username'] = item['user__type']
-                user_lst.append(item['user__type'])
-                lst.append(out)
-        for d in lst:
-            c_lst = []
-            for obj in res_qs:
-                if d['username'] == obj['user__type']:
-                    c_lst.append(obj)
-            d['courses'] = c_lst
-
-
-
-
-        # res_li=[]
-        # user_li = [] #2
-     
-        # for i in res_qs:
-        #     dic={}
-        #     if i['user_id'] not in user_li:
-        #         dic['profile_name'] = i['user__type']
-        #         user_li.append(i['user_id'])
-
-        #         dic1 = {}
-        #         course_li=[]
-        #         dic1['course_name'] = i['course__c_name']
-        #         course_li.append(dic1)
-        #         dic['courses'] = course_li
-        #         print(dic,'cccccccc')
-
-     
-        #     else:
-
-        #         dic1 = {}
-        #         dic1['course_name'] = i['course__c_name']
-        #         print(res_li[user_li.index(i['user_id'])],'jjjjjjjj')
-                
-        #         res_li[user_li.index(i['user_id'])]['courses'].append(dic1)
-
-        #         res_li.append(dic)
-
-
-
- 
-         
-        return JsonResponse({'sucess':True,'data':lst})
-    return JsonResponse({'success':False,'data':'data does not exist'})    
-
     
+@api_view(['PUT'])
+def put_api(request,pk):
+    if request.method == 'PUT':
 
-            # dic1={}
-            
-            # if i['course_id'] not in course_li:
-            #     dic1['course_name'] = i['course__c_name']
-            #     course_li.append(i['course_id'])   
-            #     res_li.append(dic1)
-                
-            #     dic2 = {}
-            #     sub_res_li = []
-            #     dic2['subject_name'] = i['subject__sub_name']
-            #     dic2['marks'] = i['marks']
-            #     sub_res_li.append(dic2)
-            #     dic1['subjects'] = sub_res_li    
+        user_id = pk
+        username = request.data.get('username')  
+        password = make_password(request.data.get('password'))
+        email = request.data.get('email')
+        age = request.data.get('age')
+        gender = request.data.get('gender')
+        address = request.data.get('address')
+        phone_no = request.data.get('phone_no')
 
-            # else:
+        User.objects.filter(id=user_id).update(username=username,
+                                    password=password,
+                                    email=email,
+                                    age=age,
+                                    gender=gender,
+                                    address=address,
+                                    phone_no=phone_no)
 
-            #     dic2 = {}
-            #     dic2['subject_name'] = i['subject__sub_name']
-            #     dic2['marks'] = i['marks']
-            #     # print(res_li[course_li.index(i['course_id'])])
+        return JsonResponse({'success':True,'data':'data updated Successfully'})
+    return JsonResponse({'success':False,'data':'does not exist'})
 
-            #     res_li[course_li.index(i['course_id'])]['subjects'].append(dic2)
+@api_view(['DELETE'])
+def delete_api(request,pk):
+    if request.method == 'DELETE':
 
+        user_id = pk    
+        User.objects.filter(id=user_id).delete()
 
-            
- 
-
-
-
-
-
-            
-            
-
-
-# @api_view(['GET'])
-# def get_st(request):
-#     if request.method == 'GET':
-#         # res_qs = list(Results.objects.all().values())
-#         user_qs = list(Profile.objects.all().values())
-
-#         user_li = []
-#         for user in user_qs:
-#             course_qs=list(Course.objects.all().values())
-            
-#             course_li=[]
-#             for course in course_qs:
-#                 subject_qs = list(Subject.objects.filter(course_id =course["id"]).values())
-                
-#                 res_li= []
-#                 for subject in subject_qs:
-#                     results = list(Results.objects.filter(subject_id = subject["id"],course_id = course["id"],user_id= user["id"]).values())
-
-                    
-#                     for res in results:
-                    
-#                         dic={}
-#                         dic["subject"] = subject["sub_name"]
-#                         dic["marks"] = res["marks"]                
-#                         res_li.append(dic)
-                    
-#                 dic={}
-#                 dic["course_name"] = course["c_name"]
-#                 dic["subjects"] = res_li
-
-#                 d={}
-#                 s = 0
-#                 for d in res_li:
-#                     s=s+d['marks']   
-#                 dic["total_marks"] = s
-#                 try:
-#                     dic["total_percentage"] = (s/(len(res_li)*100))*100
-#                 except:
-#                     dic["total_percentage"] = 0
+        return JsonResponse({'success':True,'data':'data deleted Successfully'})
+    return JsonResponse({'success':False,'data':'does not exist'})
 
 
 
-#                 if res_li:
-#                     course_li.append(dic)
-              
+def authenticate(username=None,password=None):
+    user = User.objects.get(username=username)
+    return user.check_password(password)
 
-#             dic={}
-#             dic["name"] = user["type"]
-#             dic["course"] = course_li
-#             if course_li:
-#                 user_li.append(dic)
+@api_view(['POST'])
+@csrf_exempt
+def login_api(request):
+    if request.method == 'POST':
 
-#         return JsonResponse({'sucess':True,'data':user_li})
-#     return JsonResponse({'success':False,'data':'data does not exist'})    
+        username = request.data.get('username')
+        password = request.data.get('password')
 
+        try:
+            user_ins = User.objects.get(username=username)
+        except:       
+            return JsonResponse({'success':False,'data':'user does not exist'})
 
+        user = authenticate(username, password)
 
+        if user:
 
+            try:
+                token_ins=Token.objects.get(user_id=user_ins.id)
+                print(token_ins,'tttttttt')
+            except:
+                token_ins=Token.objects.create(user_id=user_ins.id)
 
-# @api_view(['GET'])
-# def get_st1(request):
-#     if request.method == 'GET':
-#         res_qs = list(Results.objects.all().values("id","user_id","user__type","course__c_name","course_id","subject_id","subject__sub_name","marks"))
+            usr_lst=list(User.objects.filter(username=username).values())
+
+            return JsonResponse({'success':True,'data':usr_lst,'key':token_ins.key})
+        else:
+            return JsonResponse({'success':False,'data':'password is incorrect'})         
+    return JsonResponse({'success':False,'data':'invalid'})
+    
         
-#         res_li=[]
-#         user_li = []
-#         course_li=[]
-#         for i in res_qs:
-#             dic={}
-#             if i['user_id'] not in user_li:
-#                 dic['profile_name'] = i['user__type']
-#                 user_li.append(dic)
+        
 
-#             dic1={}
-            
-#             if i['course_id'] not in course_li:
-#                 dic1['course_name'] = i['course__c_name']
-#                 course_li.append(i['course_id'])   
-#                 res_li.append(dic1)
-                
-#                 dic2 = {}
-#                 sub_res_li = []
-#                 dic2['subject_name'] = i['subject__sub_name']
-#                 dic2['marks'] = i['marks']
-#                 sub_res_li.append(dic2)
-#                 dic1['subjects'] = sub_res_li    
+# @api_view(['POST'])
+# def forget_password (request):
+#     if request.method == 'POST':
+        
+#         username = request.data.get('username')
+#         otp = request.data.get('otp')   
+#         email = request.data.get('email')
+#         message = "you requested for password reset : {}".format(otp)
+#         to = email
+#         send_mail( 'Subject here',message,
+#                 'tirupatimbr@gmail.com',[to],fail_silently=False)
 
-#             else:
+#         try:
+#             user_ins=User.objects.get(username=username)
+#         except:
+#             return JsonResponse({'success':False,'data':'user does not exist'})  
 
-#                 dic2 = {}
-#                 dic2['subject_name'] = i['subject__sub_name']
-#                 dic2['marks'] = i['marks']
-#                 # print(res_li[course_li.index(i['course_id'])])
+#         try:
+#             data = ForgetPassword.objects.get(user_id=user_ins.id)
+#             data.otp=otp
+#             data.save()
+#             print(data,'ddddddd')
+#         except:    
+#             ForgetPassword.objects.create(otp=otp,user=user_ins)
 
-#                 res_li[course_li.index(i['course_id'])]['subjects'].append(dic2)
+#         return JsonResponse({'success':True,'data':'mail sent'})
+#     return JsonResponse({'success':False,'data':'invalid'})   
+
+@api_view(['POST'])
+def forget_password (request):
+    if request.method == 'POST':
+        
+        username = request.data.get('username')
+        otp = request.data.get('otp')   
+        email = request.data.get('email')
+        message = "you requested for password reset : {}".format(otp)
+        to = email
+        send_mail( 'Subject here',message,
+                'tirupatimbr@gmail.com',[to],fail_silently=False)
+
+        try:
+            user_ins=User.objects.get(username=username)
+        except:
+            return JsonResponse({'success':False,'data':'user does not exist'})  
+
+        try:
+            data = ForgetPassword.objects.get(user_id=user_ins.id)
+            data.otp=otp
+            data.save()
+            print(data,'ddddddd')
+        except:    
+            ForgetPassword.objects.create(otp=otp,user=user_ins)
+
+        return JsonResponse({'success':True,'data':'mail sent'})
+    return JsonResponse({'success':False,'data':'invalid'})   
 
 
-#         res_li.append(dic)    
-          
-#         return JsonResponse({'sucess':True,'data':res_li})
-#     return JsonResponse({'success':False,'data':'data does not exist'})   
 
 
-  
-   
 
-                
-                
+
+@api_view(['POST'])
+def Reset_api(request):
+    if request.method == 'POST':
+        otp = request.data.get('otp')
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        user_qs = ForgetPassword.objects.filter(user__username=username,otp=otp).exists()
+        print(user_qs,'uuuuuuuuu')
+
+        if user_qs:
+            User.objects.filter(username=username).update(password=make_password(password))
+
+            return JsonResponse({'success':True,'data':'updated'}) 
+        return JsonResponse({'success':False,'data':'username/otp invalid otp'}) 
+    return JsonResponse({'success':False,'data':'invalid'})
+        
+
+
+
+# @api_view(['POST'])
+# def Reset_api(request):
+#     if request.method == 'POST':
+#         otp = request.data.get('otp')
+#         username = request.data.get('username')
+#         password = request.data.get('password')
+#         if username:
+#             try:
+#                 user_qs = User.objects.get(username=username)
+#             except:
+#                 return JsonResponse({'success':False,'data':'username does not exist'}) 
+
+#             print(user_qs,'uuuuuuuuuuuuuuuuu')
+#             otp_qs = ForgetPassword.objects.get(user=user_qs)
+#             if otp == otp_qs.otp:
+#                 User.objects.filter(username=username).update(password=make_password(password))
+
+#                 return JsonResponse({'success':True,'data':'updated'})
+#             return JsonResponse({'success':True,'data':'invalid otp'}) 
+#         return JsonResponse({'success':False,'data':'invalid username'}) 
+#     return JsonResponse({'success':False,'data':'invalid'})
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
